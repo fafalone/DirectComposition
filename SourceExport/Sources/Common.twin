@@ -1,0 +1,18 @@
+Module Common
+Option Explicit 
+Public bEffectsActive As Boolean
+
+Public oCS As CRITICAL_SECTION
+
+Public sFullLog As String
+Public sFullLogLocal As String
+Public cbLog As Long
+
+Public Sub PostLog(sMsg As String)
+EnterCriticalSection oCS
+Debug.Print sMsg
+sMsg = "[" & Format$(Now, "Hh:nn:Ss") & "] " & sMsg
+sFullLog = sFullLog & sMsg & vbCrLf
+LeaveCriticalSection oCS
+End Sub
+End Module

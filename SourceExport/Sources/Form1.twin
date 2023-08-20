@@ -1,0 +1,53 @@
+[ Description ("") ]
+[ FormDesignerId ("B85E90F8-3974-4829-85FD-3B9B53B89BEC") ]
+[ PredeclaredId ]
+Class Form1
+    Option Explicit
+    Private nLogPos As Long
+    Private hThreadEffects As LongPtr
+    Private tidEffects As Long
+
+    Private Sub AppStart() Handles Form.Load
+    InitializeCriticalSectionAndSpinCount oCS, 4000&
+    tmrLog.Interval = 2000
+    tmrLog.Enabled = True
+    End Sub
+    
+    Private Sub Form_Unload(Cancel As Integer) Handles Form.Unload
+        Dim hrWait As Long
+        If bEffectsActive Then
+            PostLog "Waiting for demos to close... please close any running demos."
+            hrWait = WaitForSingleObject(hThreadEffects, 10000)
+            PostLog "Goodbye (wait end code: " & hrWait & ")"
+        End If
+        DeleteCriticalSection oCS
+    End Sub
+    
+    Private Sub Command1_Click() Handles Command1.Click
+        
+        If bEffectsActive = False Then
+            hThreadEffects = CreateThread(ByVal 0, 0, AddressOf RunDCompEffect, ByVal 0, 0, tidEffects)
+        Else
+            Beep
+            PostLog "Error: Effects demo already running. You can run multiple demos, but only one of each at a time."
+        End If
+    End Sub
+
+    Private Sub tmrLog_Timer() Handles tmrLog.Timer
+        SyncLogAndUpdate
+    End Sub
+    
+   
+    Private Sub SyncLogAndUpdate()
+        EnterCriticalSection oCS
+        sFullLogLocal = sFullLog
+        LeaveCriticalSection oCS
+        cbLog = LenB(sFullLogLocal)
+        If nLogPos <> cbLog Then
+            Text1.Text = sFullLogLocal
+            nLogPos = cbLog
+            SendMessage Text1.hWnd, EM_SCROLL, SB_BOTTOM, ByVal 0&
+        End If
+    End Sub
+
+End Class

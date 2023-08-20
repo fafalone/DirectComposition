@@ -1,0 +1,70 @@
+{
+	"configuration.inherits": "Defaults",
+	"debugger.runtimeCommandLineArguments": "",
+	"project.appHelpFile": "",
+	"project.appTitle": "DCompEffects",
+	"project.autoPrettify": true,
+	"project.buildPath": "${SourcePath}\\Build_${Architecture}\\${ProjectName}.${FileExtension}",
+	"project.buildType": "Standard EXE",
+	"project.description": "DirectComposition Effects Demo",
+	"project.exportPathIsV2": true,
+	"project.forceDpiAwarenessAtStartup": "NONE",
+	"project.id": "{CC21621C-A81B-4639-86A0-4620EC9BA2C2}",
+	"project.licence": "CC0 1.0 Universal",
+	"project.name": "DCompEffects",
+	"project.optionExplicit": true,
+	"project.references": [
+		{
+			"id": "{F50B82D0-DCAB-43FE-9631-11959D4A4728}",
+			"isCompilerPackage": true,
+			"lcid": 0,
+			"licence": "MIT",
+			"name": "[COMPILER PACKAGE] WinNativeForms Package",
+			"path32": "",
+			"path64": "",
+			"publisher": "TWINBASIC-COMPILER",
+			"versionBuild": 0,
+			"versionMajor": 0,
+			"versionMinor": 0,
+			"versionRevision": 31
+		},
+		{
+			"id": "{00020430-0000-0000-C000-000000000046}",
+			"lcid": 0,
+			"name": "OLE Automation",
+			"path32": "\\\\?\\C:\\Windows\\SysWOW64\\stdole2.tlb",
+			"path64": "\\\\?\\C:\\Windows\\SysWOW64\\stdole2.tlb",
+			"versionMajor": 2,
+			"versionMinor": 0
+		},
+		{
+			"id": "{1FCDB98D-617D-4995-9736-2ED0E4746A10}",
+			"licence": "CC0 1.0 Universal",
+			"name": "[IMPORTED] twinBASIC Shell Library v5.0.203",
+			"path32": "/Packages/tbShellLib",
+			"path64": "/Packages/tbShellLib",
+			"publishedDate": "19-AUG-2023",
+			"publishedTime": "20:27:34",
+			"publisher": "fafalone",
+			"symbolId": "tbShellLib",
+			"versionBuild": "203",
+			"versionMajor": "5",
+			"versionMinor": "0",
+			"versionRevision": "0"
+		}
+	],
+	"project.settingsVersion": 1,
+	"project.startupObject": "Form1",
+	"project.versionCompanyName": "JAJ Productions",
+	"project.versionFileDescription": "DirectComposition Demo",
+	"project.versionLegalCopyright": "(c) 2023",
+	"project.versionMajor": 1,
+	"project.versionMinor": 0,
+	"project.versionProductName": "DCompEffects",
+	"project.versionRevision": 2,
+	"project.warnings": {
+		"errors": [],
+		"ignored": []
+	},
+	"runtime.useUnicodeStandardLibrary": true
+}

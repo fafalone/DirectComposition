@@ -1,0 +1,1388 @@
+Module MainModule
+
+    Option Explicit
+
+    Private Const D3D11_SDK_VERSION = 7
+
+
+    Private Const FONT_TYPEFACE = "Segoe UI Light"
+    Private fontTypeface(31) As Integer
+
+    Private Const FONT_HEIGHT_LOGO = 0
+    Private fontHeightLogo As Long
+    Private Const FONT_HEIGHT_TITLE = 50
+    Private fontHeightTitle As Long
+    Private Const FONT_HEIGHT_DESCRIPTION = 22
+    Private fontHeightDescription As Long
+
+    Private m_hWnd As LongPtr
+
+    Private tileSize As Long
+
+    Private windowWidth As Long
+    Private windowHeight As Long
+
+    Private d3d11Device As ID3D11Device
+    Private d3d11DeviceContext As ID3D11DeviceContext
+
+    Private d2d1Factory As ID2D1Factory1
+
+    Private d2d1Device As ID2D1Device
+    Private d2d1DeviceContext As ID2D1DeviceContext
+
+    Private device As IDCompositionDevice
+    Private target As IDCompositionTarget
+    Private visual As IDCompositionVisual
+    Private visualLeft As IDCompositionVisual
+    Private visualLeftChild(3) As IDCompositionVisual
+    Private visualRight As IDCompositionVisual
+
+    Private surfaceLeftChild(3) As IDCompositionSurface
+
+    Private effectGroupLeft As IDCompositionEffectGroup
+    Private effectGroupLeftChild(3) As IDCompositionEffectGroup
+    Private effectGroupRight As IDCompositionEffectGroup
+
+    Private currentVisual As Long
+
+    Private Enum VIEW_STATE
+        ZOOMEDOUT
+        ZOOMEDIN
+    End Enum
+
+    Private state As VIEW_STATE
+
+    Private Enum ACTION_TYPE
+        ZoomOut
+        ZoomIn
+    End Enum
+
+    Private actionType As ACTION_TYPE
+
+    Private Const wndClass = "MainWindowClass"
+    Private Const wndName = "DirectComposition Effects Sample"
+
+    Private Const gridSize = 100
+ 
+
+    Private Function SUCCEEDED(hr As Long) As Boolean
+        SUCCEEDED = (hr >= 0)
+    End Function
+    Sub Main()
+        RunDCompEffect
+    
+    End Sub
+
+    Public Function RunDCompEffect() As Long
+        bEffectsActive = True
+        tileSize = (3 * gridSize)
+        windowWidth = (9 * gridSize)
+        windowHeight = (6 * gridSize)
+        state = (ZOOMEDOUT)
+        actionType = (ZoomOut)
+        currentVisual = (0)
+
+            Dim result As Long
+    
+        If SUCCEEDED(BeforeEnteringMessageLoop()) Then
+            PostLog "BeforeEnteringMessageLoop succeeded"
+            result = EnterMessageLoop()
+        Else
+            MsgBox "An error occured when running the sample.", vbCritical Or vbOKOnly, wndName
+        End If
+    
+        AfterLeavingMessageLoop
+        RunDCompEffect = result
+    End Function
+
+    Private Function BeforeEnteringMessageLoop() As Long
+        Dim hr As Long
+        hr = CreateApplicationWindow()
+        If SUCCEEDED(hr) Then
+            hr = CreateD3D11Device()
+        Else
+            PostLog "CreateApplicationWindow failed, hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateD2D1Factory()
+        Else
+            PostLog "CreateD3D11Device failed, hr=0x" & Hex$(hr)
+        End If
+        
+        If SUCCEEDED(hr) Then
+            hr = CreateD2D1Device()
+        Else
+            PostLog "CreateD2D1Factory failed, hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateDCompositionDevice()
+        Else
+            PostLog "CreateD2D1Device failed, hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateDCompositionVisualTree()
+        Else
+            PostLog "CreateDCompositionDevice failed, hr=0x" & Hex$(hr)
+        End If
+
+        If SUCCEEDED(hr) Then
+            PostLog "BeforeEnteringMessageLoop->All initialization routines returned success."
+        Else
+            PostLog "CreateDCompositionVisualTree failed, hr=0x" & Hex$(hr)
+        End If
+        BeforeEnteringMessageLoop = hr
+    End Function
+
+    Private Function EnterMessageLoop() As Long
+        Dim result As Long
+    
+        If ShowApplicationWindow() Then
+            Dim tMSG As MSG
+            Dim hr As Long
+            PostLog "Entering message loop"
+            hr = GetMessage(tMSG, 0, 0, 0)
+            Do While hr <> 0
+                If hr = -1 Then
+                    PostLog "Error: 0x" & Hex$(Err.LastDllError)
+                Else
+                    TranslateMessage tMSG
+                    DispatchMessage tMSG
+                End If
+                hr = GetMessage(tMSG, 0, 0, 0)
+            Loop
+            PostLog "Exited message loop"
+            result = CLng(tMSG.wParam)
+        End If
+        
+        EnterMessageLoop = result
+    End Function
+
+    Private Sub AfterLeavingMessageLoop()
+
+         DestroyDCompositionVisualTree
+    
+         DestroyDCompositionDevice
+
+         DestroyD2D1Device
+
+         DestroyD2D1Factory
+
+         DestroyD3D11Device
+
+        DestroyApplicationWindow
+    End Sub
+
+    Private Function CreateApplicationWindow() As Long
+
+        Dim hr As Long = S_OK
+    
+        Dim wcex As WNDCLASSEX
+    
+        wcex.cbSize = LenB(wcex)
+        wcex.style = CS_HREDRAW Or CS_VREDRAW
+        wcex.lpfnWndProc = AddressOf WindowProc
+        wcex.cbClsExtra = 0
+        wcex.cbWndExtra = 0
+        wcex.hInstance = App.hInstance
+        wcex.hIcon = 0
+        wcex.hCursor = LoadCursor(0, IDC_ARROW)
+        wcex.hbrBackground = GetStockObject(WHITE_BRUSH)
+        wcex.lpszMenuName = 0
+        wcex.lpszClassName = StrPtr(wndClass)
+        wcex.hIconSm = 0
+    
+        hr = IIf(RegisterClassEx(wcex), S_OK, E_FAIL)
+        If Err.LastDllError = ERROR_CLASS_ALREADY_EXISTS Then
+            PostLog "ERROR_CLASS_ALREADY_EXISTS; registering."
+            UnregisterClassW StrPtr(wndClass), App.hInstance
+            hr = IIf(RegisterClassEx(wcex), S_OK, E_FAIL)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "RegisterClassEx succeeded"
+
+            Dim RECT As RECT
+
+            RECT.Right = windowWidth: RECT.Bottom = windowHeight
+        
+            AdjustWindowRect RECT, WS_OVERLAPPED Or WS_CAPTION Or WS_SYSMENU Or WS_MINIMIZEBOX, 0
+        
+            m_hWnd = CreateWindowExW(0, StrPtr(wndClass), StrPtr(wndName), WS_OVERLAPPED Or WS_CAPTION Or WS_SYSMENU Or WS_MINIMIZEBOX, _
+                                CW_USEDEFAULT, CW_USEDEFAULT, RECT.Right - RECT.Left, RECT.Bottom - RECT.Top, 0, 0, App.hInstance, ByVal 0)
+        
+            PostLog "Window hwnd=" & m_hWnd
+
+            If m_hWnd = 0 Then
+                hr = E_UNEXPECTED
+                PostLog "CreateWindowExW failed, LastError=0x" & Hex$(Err.LastDllError)
+            End If
+
+        Else
+            PostLog "RegisterClassEx failed, LastError=0x" & Hex$(Err.LastDllError)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            'CopyMemory fontTypeface(0), ByVal StrPtr(FONT_TYPEFACE), LenB(FONT_TYPEFACE)
+        
+            fontHeightLogo = FONT_HEIGHT_LOGO
+        
+            fontHeightTitle = FONT_HEIGHT_TITLE
+        
+            fontHeightDescription = FONT_HEIGHT_DESCRIPTION
+        End If
+    
+        CreateApplicationWindow = hr
+             
+    End Function
+
+    Private Function ShowApplicationWindow() As Boolean
+        Dim bSucceeded As Boolean = (m_hWnd <> 0)
+        PostLog "ShowApplicationWindow bSucceeded=" & bSucceeded
+        If bSucceeded Then
+            ShowWindow m_hWnd, SW_SHOW
+            UpdateWindow m_hWnd
+        End If
+        ShowApplicationWindow = bSucceeded
+    End Function
+
+    Private Sub DestroyApplicationWindow()
+        If m_hWnd Then
+            DestroyWindow m_hWnd
+            UnregisterClassW StrPtr(wndClass), App.hInstance
+        End If
+    End Sub
+
+    Private Sub DestroyDCompositionVisualTree()
+    
+        Set effectGroupRight = Nothing
+    
+        Dim i As Long
+    
+        For i = 0 To 3
+            Set effectGroupLeftChild(i) = Nothing
+        Next
+    
+        For i = 0 To 3
+            Set surfaceLeftChild(i) = Nothing
+        Next
+    
+        Set visualRight = Nothing
+    
+        For i = 0 To 3
+            Set visualLeftChild(i) = Nothing
+        Next
+    
+        Set visualLeft = Nothing
+    
+        Set visual = Nothing
+    
+        Set target = Nothing
+    End Sub
+
+    Private Sub DestroyDCompositionDevice()
+        Set device = Nothing
+    End Sub
+
+    Private Sub DestroyD3D11Device()
+        Set d3d11DeviceContext = Nothing
+        Set d3d11Device = Nothing
+    End Sub
+
+    Private Sub DestroyD2D1Device()
+        Set d2d1DeviceContext = Nothing
+        Set d2d1Device = Nothing
+    End Sub
+
+    Private Sub DestroyD2D1Factory()
+        Set d2d1Factory = Nothing
+    End Sub
+
+    Private Function CreateD3D11Device() As Long
+        PostLog "CreateD3D11Device->Entry"
+        Dim hr As Long = S_OK
+        Dim i As Long
+        Dim driverTypes(1) As D3D_DRIVER_TYPE
+        driverTypes(0) = D3D_DRIVER_TYPE_HARDWARE
+        driverTypes(1) = D3D_DRIVER_TYPE_WARP
+    
+        Dim featureLevelSupported As D3D_FEATURE_LEVEL
+    
+    
+        For i = 0 To UBound(driverTypes)
+        
+            hr = D3D11CreateDevice(Nothing, driverTypes(i), 0, D3D11_CREATE_DEVICE_BGRA_SUPPORT, ByVal 0, 0, D3D11_SDK_VERSION, d3d11Device, featureLevelSupported, d3d11DeviceContext)
+        
+            If SUCCEEDED(hr) Then
+                PostLog "D3D11CreateDevice(" & i & ") succeeded."
+                Exit For
+            End If
+        Next
+        PostLog "CreateD3D11Device->hr=0x" & Hex$(hr)
+        CreateD3D11Device = hr
+            
+    End Function
+
+    Private Function CreateD2D1Factory() As Long
+        PostLog "CreateD2D1Factory->Entry"
+        D2D1CreateFactory(D2D1_FACTORY_TYPE_SINGLE_THREADED, IID_ID2D1Factory, ByVal 0, d2d1Factory)
+        If (d2d1Factory Is Nothing) Then
+            CreateD2D1Factory = E_NOINTERFACE
+        End If
+    End Function
+
+    Private Function CreateD2D1Device() As Long
+        PostLog "CreateD2D1Device->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf((d3d11Device Is Nothing) Or (d2d1Factory Is Nothing), E_UNEXPECTED, S_OK)
+    
+        Dim dxgiDevice As IDXGIDevice
+    
+        If SUCCEEDED(hr) Then
+            Set dxgiDevice = d3d11Device
+            hr = Err.LastHResult '(dxgiDevice IsNot Nothing)
+        End If
+        If dxgiDevice Is Nothing Then
+            hr = E_NOINTERFACE
+        End If
+        If SUCCEEDED(hr) Then
+            PostLog "CreateD2D1Device->Successful QI for dxgiDevice"
+            d2d1Factory.CreateDevice dxgiDevice, d2d1Device
+            hr = Err.LastHResult
+        Else
+            PostLog "CreateD2D1Device->Failed QI for dxgiDevice, lasthr=0x" & Hex$(hr) 'Hex$(Err.LastHResult)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "CreateD2D1Device->Created d2d1device"
+            d2d1Device.CreateDeviceContext D2D1_DEVICE_CONTEXT_OPTIONS_NONE, d2d1DeviceContext
+            hr = Err.LastHResult
+        Else
+            PostLog "CreateD2D1Device->Failed to create d2d1device, lasthr=0x" & Hex$(hr)
+        End If
+    
+        CreateD2D1Device = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+
+    Private Function CreateDCompositionDevice() As Long
+        PostLog "CreateDCompositionDevice->Entry"
+        Dim hr As Long = IIf(d3d11Device Is Nothing, E_UNEXPECTED, S_OK)
+    
+        Dim dxgiDevice As IDXGIDevice
+    
+        If SUCCEEDED(hr) Then
+            Dim pUnk As IUnknownUnrestricted
+            Set pUnk = d3d11Device
+            hr = pUnk.QueryInterface(IID_IDXGIDevice, dxgiDevice)
+            PostLog "CreateDCompositionDevice->d3d11device ok, dxgiDevice QI hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = DCompositionCreateDevice(dxgiDevice, IID_IDCompositionDevice, device)
+        End If
+    
+        CreateDCompositionDevice = hr
+    End Function
+
+    Private Function CreateDCompositionVisualTree() As Long
+        PostLog "CreateDCompositionVisualTree->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            device.CreateVisual visual
+            hr = Err.LastHResult
+        End If
+        PostLog "CreateDCompositionVisualTree->visual hr=0x" & Hex$(hr)
+        If SUCCEEDED(hr) Then
+            device.CreateVisual visualLeft
+            hr = Err.LastHResult
+        End If
+        PostLog "CreateDCompositionVisualTree->visualLeft hr=0x" & Hex$(hr)
+        Dim surfaceLeft As IDCompositionSurface
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateSurface(tileSize, 1#, 0, 0, surfaceLeft)
+            PostLog "CreateDCompositionVisualTree->CreateSurface(surfaceLeft) hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            visualLeft.SetContent surfaceLeft
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->SetContent(surfaceLeft) hr=0x" & Hex$(hr)
+        End If
+    
+        Dim i As Long
+    
+        For i = 0 To 3
+        
+            If SUCCEEDED(hr) Then
+                device.CreateVisual visualLeftChild(i)
+                hr = Err.LastHResult
+            End If
+        
+            If i = 0 Then
+                If SUCCEEDED(hr) Then
+                    hr = CreateSurface(tileSize, 0, 1#, 0, surfaceLeftChild(i))
+                Else
+                    PostLog "CreateDCompositionVisualTree->device.CreateVisual(VisualLeftChild(" & i & ")) failed, hr=0x" & Hex$(hr)
+                End If
+            
+            ElseIf i = 1 Then
+                If SUCCEEDED(hr) Then
+                    hr = CreateSurface(tileSize, 0.5, 0, 0.5, surfaceLeftChild(i))
+                Else
+                    PostLog "CreateDCompositionVisualTree->device.CreateVisual(VisualLeftChild(" & i & ")) failed, hr=0x" & Hex$(hr)
+                End If
+        
+            ElseIf i = 2 Then
+                If SUCCEEDED(hr) Then
+                    hr = CreateSurface(tileSize, 0.5, 0.5, 0, surfaceLeftChild(i))
+                Else
+                    PostLog "CreateDCompositionVisualTree->device.CreateVisual(VisualLeftChild(" & i & ")) failed, hr=0x" & Hex$(hr)
+                End If
+            
+            ElseIf i = 3 Then
+                If SUCCEEDED(hr) Then
+                    hr = CreateSurface(tileSize, 0, 0, 1#, surfaceLeftChild(i))
+                Else
+                    PostLog "CreateDCompositionVisualTree->device.CreateVisual(VisualLeftChild(" & i & ")) failed, hr=0x" & Hex$(hr)
+                End If
+            End If
+        
+            If SUCCEEDED(hr) Then
+                visualLeftChild(i).SetContent surfaceLeftChild(i)
+                hr = Err.LastHResult
+            Else
+                PostLog "CreateDCompositionVisualTree->CreateSurface(surfaceLeftChild(" & i & ")) fail; hr=0x" & Hex$(hr)
+            End If
+        Next
+    
+        If SUCCEEDED(hr) Then
+            device.CreateVisual visualRight
+            hr = CLng(vbNullPtr) ' Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->CreateVisual(visualRight) hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            visualRight.SetContent surfaceLeftChild(currentVisual)
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->SetContent surfaceLeftChild(cv) hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            visual.AddVisual visualLeft, 1, Nothing
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->AddVisual visualLeft hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            For i = 0 To 3
+                visualLeft.AddVisual visualLeftChild(i), 0, Nothing
+                hr = Err.LastHResult
+            Next
+            PostLog "CreateDCompositionVisualTree->visualLeftChildren i=" & i & ", hr=0x" & Hex$(hr)
+        End If
+    
+    
+        If SUCCEEDED(hr) Then
+            visual.AddVisual visualRight, 1, visualLeft
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->AddVisual visualRight,visualLeft hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = SetEffectOnVisuals()
+        End If
+    
+        If SUCCEEDED(hr) Then
+            device.CreateTargetForHwnd m_hWnd, 1, target
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->CreateTargetForHwnd hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            target.SetRoot visual
+            hr = Err.LastHResult
+            PostLog "CreateDCompositionVisualTree->SetRoot hr=0x" & Hex$(hr)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            device.Commit
+            hr = Err.LastHResult
+        End If
+    
+        CreateDCompositionVisualTree = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+    Private Function SetEffectOnVisuals() As Long
+        Dim hr As Long = SetEffectOnVisualLeft()
+    
+        If SUCCEEDED(hr) Then
+            hr = SetEffectOnVisualLeftChildren()
+        End If
+    
+        If SUCCEEDED(hr) Then
+            hr = SetEffectOnVisualRight()
+        End If
+    
+        SetEffectOnVisuals = hr
+    End Function
+
+    Private Function SetEffectOnVisualLeftChildren() As Long
+        PostLog "SetEffectOnVisualLeftChildren->Entry"
+        On Error Resume Next
+   
+        Dim hr As Long = S_OK
+    
+        Dim i As Long
+        For i = 0 To 3
+            Dim r As Long = i \ 2
+            Dim c As Long = i Mod 2
+
+            Dim oScale As IDCompositionScaleTransform3D
+        
+            If SUCCEEDED(hr) Then
+                hr = CreateScaleTransform(0#, 0#, 0#, 1# / 3#, 1# / 3#, 1#, oScale)
+            End If
+        
+            Dim translate As IDCompositionTranslateTransform3D
+        
+            If SUCCEEDED(hr) Then
+                hr = CreateTranslateTransform((0.25 + c * 1.5) * gridSize, (0.25 + r * 1.5) * gridSize, 0#, translate)
+            End If
+        
+            Dim transforms(0 To 1) As IDCompositionTransform3D
+            Set transforms(0) = oScale
+            Set transforms(1) = translate
+        
+            Dim transformGroup As IDCompositionTransform3D
+        
+            If SUCCEEDED(hr) Then
+                device.CreateTransform3DGroup VarPtr(transforms(0)), 2, transformGroup
+                hr = Err.LastHResult
+            End If
+        
+            If SUCCEEDED(hr) Then
+                Set effectGroupLeftChild(i) = Nothing
+                device.CreateEffectGroup effectGroupLeftChild(i)
+                hr = Err.LastHResult
+            End If
+        
+            If SUCCEEDED(hr) Then
+                effectGroupLeftChild(i).SetTransform3D transformGroup
+                hr = Err.LastHResult
+            End If
+        
+            If SUCCEEDED(hr) And (i = currentVisual) Then
+                Dim opacityAnimation As IDCompositionAnimation
+            
+                Dim beginOpacity As Single = IIf(actionType = ZoomOut, 1#, 0#)
+                Dim endOpacity As Single = IIf(actionType = ZoomOut, 0#, 1#)
+            
+                hr = CreateLinearAnimation(beginOpacity, endOpacity, 0.25, 1.25, opacityAnimation)
+            
+                If SUCCEEDED(hr) Then
+                    effectGroupLeftChild(i).SetOpacity_A opacityAnimation
+                    hr = Err.LastHResult
+                End If
+            End If
+        
+            If SUCCEEDED(hr) Then
+                visualLeftChild(i).SetEffect effectGroupLeftChild(i)
+                hr = Err.LastHResult
+            End If
+        
+        Next
+    
+        SetEffectOnVisualLeftChildren = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next
+
+    End Function
+
+    Private Function CreateScaleTransform(centerX As Single, centerY As Single, centerZ As Single, scaleX As Single, scaleY As Single, scaleZ As Single, scaleTransform As IDCompositionScaleTransform3D) As Long
+        PostLog "CreateScaleTransform->Entry"
+        On Error Resume Next
+         Dim hr As Long = IIf(VarPtr(scaleTransform) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set scaleTransform = Nothing
+            hr = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+        End If
+    
+        Dim transform As IDCompositionScaleTransform3D
+
+        If SUCCEEDED(hr) Then
+            device.CreateScaleTransform3D transform
+            hr = Err.LastHResult
+        End If
+            
+        If SUCCEEDED(hr) Then
+            transform.SetCenterX centerX
+            hr = Err.LastHResult
+        End If
+    
+         If SUCCEEDED(hr) Then
+            transform.SetCenterY centerY
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            transform.SetCenterZ centerZ
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetScaleX scaleX
+            hr = Err.LastHResult
+        End If
+    
+         If SUCCEEDED(hr) Then
+            transform.SetScaleY scaleY
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            transform.SetScaleZ scaleZ
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            CopyMemory scaleTransform, transform, LenB(Of LongPtr)
+            ZeroMemory transform, LenB(Of LongPtr)
+        End If
+
+        CreateScaleTransform = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+    Private Function SetEffectOnVisualRight() As Long
+        PostLog "SetEffectOnVisualRight->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(visualRight Is Nothing, E_UNEXPECTED, S_OK)
+    
+        Dim beginOffsetX As Single = IIf(actionType = ZoomOut, 6.5, 3.75)
+        Dim endOffsetX As Single = IIf(actionType = ZoomOut, 3.75, 6.5)
+        Dim offsetY As Single = 1.5
+    
+        Dim translateTransform As IDCompositionTranslateTransform3D
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateTranslateTransform_A(beginOffsetX * gridSize, offsetY * gridSize, 0, endOffsetX * gridSize, offsetY * gridSize, 0, 0.25, 1.25, translateTransform)
+        End If
+    
+        Dim transforms(0) As IDCompositionTransform3D
+        Set transforms(0) = translateTransform
+    
+        Dim transformGroup As IDCompositionTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateTransform3DGroup VarPtr(transforms(0)), 1, transformGroup
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            Set effectGroupRight = Nothing
+            device.CreateEffectGroup effectGroupRight
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            effectGroupRight.SetTransform3D transformGroup
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            Dim opacityAnimation As IDCompositionAnimation
+        
+            Dim beginOpacity As Single = IIf(actionType = ZoomOut, 0#, 1#)
+            Dim endOpacity As Single = IIf(actionType = ZoomOut, 1#, 0#)
+        
+            hr = CreateLinearAnimation(beginOpacity, endOpacity, 0.25, 1.25, opacityAnimation)
+        
+            If SUCCEEDED(hr) Then
+                effectGroupRight.SetOpacity_A opacityAnimation
+                hr = Err.LastHResult
+            End If
+        End If
+    
+        If SUCCEEDED(hr) Then
+            visualRight.SetEffect effectGroupRight
+            hr = Err.LastHResult
+        End If
+    
+        SetEffectOnVisualRight = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+    Private Function SetEffectOnVisualLeft() As Long
+        PostLog "SetEffectOnVisualLeft->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(visualLeft Is Nothing, E_UNEXPECTED, S_OK)
+    
+        Dim beginOffsetX As Single = IIf(actionType = ZoomOut, 3#, 0.5)
+        Dim endOffsetX As Single = IIf(actionType = ZoomOut, 0.5, 3#)
+        Dim offsetY As Single = 1.5
+    
+        Dim beginAngle As Single = IIf(actionType = ZoomOut, 0, 30)
+        Dim endAngle As Single = IIf(actionType = ZoomOut, 30, 0)
+    
+        Dim translateTransform As IDCompositionTranslateTransform3D
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateTranslateTransform_A(beginOffsetX * gridSize, offsetY * gridSize, 0, endOffsetX * gridSize, _
+                                            offsetY * gridSize, 0, 0.25, 1.25, translateTransform)
+        End If
+    
+        Dim rotateTransform As IDCompositionRotateTransform3D
+
+        If SUCCEEDED(hr) Then
+            hr = CreateRotateTransform(3.5 * gridSize, 1.5 * gridSize, 0, 0, 2#, 0, beginAngle, endAngle, 0.25, 1.25, rotateTransform)
+        End If
+    
+        Dim perspectiveTransform As IDCompositionMatrixTransform3D
+    
+        If SUCCEEDED(hr) Then
+            hr = CreatePerspectiveTransform(0#, 0#, -1# / (9# * gridSize), perspectiveTransform)
+        End If
+    
+        Dim transforms(0 To 2) As IDCompositionTransform3D
+        Set transforms(0) = translateTransform
+        Set transforms(1) = rotateTransform
+        Set transforms(2) = perspectiveTransform
+    
+        Dim transformGroup As IDCompositionTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateTransform3DGroup VarPtr(transforms(0)), 3, transformGroup
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            Set effectGroupLeft = Nothing
+            device.CreateEffectGroup effectGroupLeft
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            effectGroupLeft.SetTransform3D transformGroup
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            visualLeft.SetEffect effectGroupLeft
+            hr = Err.LastHResult
+        End If
+    
+        SetEffectOnVisualLeft = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+    Private Function CreatePerspectiveTransform(dx As Single, dy As Single, dz As Single, perspectiveTransform As IDCompositionMatrixTransform3D) As Long
+        PostLog "CreatePerspectiveTransform->Entry, dz=" & dz
+        On Error Resume Next
+        Dim hr As Long = IIf(VarPtr(perspectiveTransform) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set perspectiveTransform = Nothing
+        End If
+    
+        Dim matrix As D3DMATRIX
+        matrix.m_11 = 1.0#: matrix.m_12 = 0.0#: matrix.m_13 = 0.0#: matrix.m_14 = dx
+        matrix.m_21 = 0.0#: matrix.m_22 = 1.0#: matrix.m_23 = 0.0#: matrix.m_24 = dy
+        matrix.m_31 = 0.0#: matrix.m_32 = 0.0#: matrix.m_33 = 1.0#: matrix.m_34 = dz
+        matrix.m_41 = 0.0#: matrix.m_42 = 0.0#: matrix.m_43 = 0.0#: matrix.m_44 = 1.0#
+
+        Dim transform As IDCompositionMatrixTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateMatrixTransform3D transform
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetMatrix matrix
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            CopyMemory perspectiveTransform, transform, LenB(Of LongPtr)
+            ZeroMemory transform, LenB(Of LongPtr)
+        End If
+
+        CreatePerspectiveTransform = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+        
+    End Function
+
+ 
+    Private Function CreateRotateTransform(centerX As Single, centerY As Single, centerZ As Single, _
+                                           axisX As Single, axisY As Single, axisZ As Single, _
+                                           beginAngle As Single, endAngle As Single, beginTime As Single, endTime As Single, _
+                                           rotateTransform As IDCompositionRotateTransform3D) As Long
+                                           
+        PostLog "CreateRotateTransform->Entry"
+        On Error Resume Next
+         Dim hr As Long = IIf(VarPtr(rotateTransform) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set rotateTransform = Nothing
+            hr = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+        End If
+    
+        Dim transform As IDCompositionRotateTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateRotateTransform3D transform
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetCenterX centerX
+            hr = Err.LastHResult
+        End If
+    
+         If SUCCEEDED(hr) Then
+            transform.SetCenterY centerY
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            transform.SetCenterZ centerZ
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetAxisX axisX
+            hr = Err.LastHResult
+        End If
+    
+         If SUCCEEDED(hr) Then
+            transform.SetAxisY axisY
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            transform.SetAxisZ axisZ
+            hr = Err.LastHResult
+        End If
+
+        Dim angleAnimation As IDCompositionAnimation
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateLinearAnimation(beginAngle, endAngle, beginTime, endTime, angleAnimation)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetAngle_A angleAnimation
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            CopyMemory rotateTransform, transform, LenB(Of LongPtr)
+            ZeroMemory transform, LenB(Of LongPtr)
+        End If
+
+        CreateRotateTransform = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+        
+        
+    End Function
+
+    Private Function CreateTranslateTransform(offsetX As Single, offsetY As Single, offsetZ As Single, translateTransform As IDCompositionTranslateTransform3D) As Long
+        PostLog "CreateTranslateTransform->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(VarPtr(translateTransform) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set translateTransform = Nothing
+            hr = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+        End If
+    
+        Dim transform As IDCompositionTranslateTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateTranslateTransform3D transform
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetX offsetX
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetY offsetY
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetZ offsetZ
+            hr = Err.LastHResult
+        End If
+
+        If SUCCEEDED(hr) Then
+            CopyMemory translateTransform, transform, LenB(Of LongPtr)
+            ZeroMemory transform, LenB(Of LongPtr)
+        End If
+
+        CreateTranslateTransform = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    End Function
+
+                                       
+    Private Function CreateTranslateTransform_A(beginOffsetX As Single, beginOffsetY As Single, beginOffsetZ As Single, endOffsetX As Single, endOffsetY As Single, endOffsetZ As Single, beginTime As Single, endTime As Single, translateTransform As IDCompositionTranslateTransform3D) As Long
+        PostLog "CreateTranslateTransform_A->Entry"
+        On Error Resume Next
+
+        Dim hr As Long = IIf(VarPtr(translateTransform) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set translateTransform = Nothing
+            hr = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+        End If
+    
+        Dim transform As IDCompositionTranslateTransform3D
+    
+        If SUCCEEDED(hr) Then
+            device.CreateTranslateTransform3D transform
+            hr = Err.LastHResult
+        End If
+    
+        Dim offsetXAnimation As IDCompositionAnimation
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateLinearAnimation(beginOffsetX, endOffsetX, beginTime, endTime, offsetXAnimation)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetX_A offsetXAnimation
+            hr = Err.LastHResult
+        End If
+
+        Dim offsetYAnimation As IDCompositionAnimation
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateLinearAnimation(beginOffsetY, endOffsetY, beginTime, endTime, offsetYAnimation)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetY_A offsetYAnimation
+            hr = Err.LastHResult
+        End If
+    
+        Dim offsetZAnimation As IDCompositionAnimation
+    
+        If SUCCEEDED(hr) Then
+            hr = CreateLinearAnimation(beginOffsetZ, endOffsetZ, beginTime, endTime, offsetZAnimation)
+        End If
+    
+        If SUCCEEDED(hr) Then
+            transform.SetOffsetZ_A offsetZAnimation
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            CopyMemory translateTransform, transform, LenB(Of LongPtr)
+            ZeroMemory transform, LenB(Of LongPtr)
+        End If
+
+        CreateTranslateTransform_A = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+    
+    End Function
+
+    Private Function CreateLinearAnimation(beginValue As Single, endValue As Single, beginTime As Single, endTime As Single, linearAnimation As IDCompositionAnimation) As Long
+        PostLog "CreateLinearAnimation->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(VarPtr(linearAnimation) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            Set linearAnimation = Nothing
+            hr = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
+        End If
+    
+        Dim animation As IDCompositionAnimation
+    
+        If SUCCEEDED(hr) Then
+            device.CreateAnimation animation
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            If beginTime > 0 Then
+                animation.AddCubic 0, beginValue, 0, 0, 0
+                hr = Err.LastHResult
+            End If
+        End If
+    
+        If SUCCEEDED(hr) Then
+            animation.AddCubic beginTime, beginValue, (endValue - beginValue) / (endTime - beginTime), 0, 0
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            animation.End endTime, endValue
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "CreateLinearAnimation->animation.Detach()"
+            CopyMemory linearAnimation, animation, LenB(Of LongPtr)
+            ZeroMemory animation, LenB(Of LongPtr)
+        End If
+        PostLog "CreateLinearAnimation->hr=0x" & Hex$(hr)
+        CreateLinearAnimation = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+
+    End Function
+
+
+
+
+
+    Private Function CreateSurface(ByVal size As Long, ByVal fRed As Single, ByVal fGreen As Single, ByVal fBlue As Single, surface As IDCompositionSurface) As Long
+        PostLog "CreateSurface->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(VarPtr(surface) = 0, E_POINTER, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            hr = IIf(((device Is Nothing) Or (d2d1Factory Is Nothing) Or (d2d1DeviceContext Is Nothing)), E_UNEXPECTED, S_OK)
+            Set surface = Nothing
+        End If
+    
+        Dim surfaceTile As IDCompositionSurface
+    
+        If SUCCEEDED(hr) Then
+            device.CreateSurface size, size, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ALPHA_MODE_IGNORE, surfaceTile
+            hr = Err.LastHResult
+        End If
+    
+        Dim dxgiSurface As IDXGISurface
+        Dim offset As POINT
+    
+        If SUCCEEDED(hr) Then
+            PostLog "CreateSurface->BeginDraw"
+            Dim RECT As RECT
+            RECT.Right = size: RECT.Bottom = size
+        
+            surfaceTile.BeginDraw RECT, IID_IDXGISurface, dxgiSurface, offset
+            hr = Err.LastHResult
+        End If
+        
+        Dim d2d1Bitmap As ID2D1Bitmap1
+        If SUCCEEDED(hr) Then
+            Dim dpiX As Single, dpiY As Single
+            d2d1Factory.GetDesktopDpi dpiX, dpiY
+        
+            Dim bitmapProperties As D2D1_BITMAP_PROPERTIES1
+            bitmapProperties.bitmapOptions = D2D1_BITMAP_OPTIONS_TARGET Or D2D1_BITMAP_OPTIONS_CANNOT_DRAW
+            bitmapProperties.PixelFormat.Format = DXGI_FORMAT_R8G8B8A8_UNORM
+            bitmapProperties.PixelFormat.AlphaMode = D2D1_ALPHA_MODE_IGNORE
+            bitmapProperties.DpiX = dpiX
+            bitmapProperties.DpiY = dpiY
+        
+            Set d2d1Bitmap = d2d1DeviceContext.CreateBitmapFromDxgiSurface(dxgiSurface, bitmapProperties)
+            hr = Err.LastHResult
+        
+            If SUCCEEDED(hr) Then
+                d2d1DeviceContext.SetTarget d2d1Bitmap
+            End If
+        
+            Dim d2d1Brush As ID2D1SolidColorBrush
+        
+            If SUCCEEDED(hr) Then
+                Dim clr As D2D1_COLOR_F
+                clr.r = fRed: clr.g = fGreen: clr.b = fBlue: clr.a = 1#
+                Set d2d1Brush = d2d1DeviceContext.CreateSolidColorBrush(clr, vbNullPtr)
+                hr = Err.LastHResult
+            End If
+        
+            If SUCCEEDED(hr) Then
+                PostLog "CreateSurface->DeviceContext::Draw"
+                d2d1DeviceContext.BeginDraw
+            
+                Dim rf As D2D1_RECT_F
+                rf.Left = offset.x
+                rf.Top = offset.y
+                rf.Right = offset.x + size
+                rf.Bottom = offset.y + size
+            
+                d2d1DeviceContext.FillRectangle rf, d2d1Brush
+            
+                d2d1DeviceContext.EndDraw ByVal 0, ByVal 0
+                hr = Err.LastHResult
+            End If
+            PostLog "CreateSurface->EndDraw"
+            surfaceTile.EndDraw
+        
+    End If
+
+    If SUCCEEDED(hr) Then
+        PostLog "CreateSurface->surfaceTile.Detach()"
+        CopyMemory surface, surfaceTile, LenB(Of LongPtr)
+        ZeroMemory surfaceTile, LenB(Of LongPtr)
+    End If
+
+    CreateSurface = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'We handle errors manually with the endless SUCCEEDED checks
+   
+    End Function
+
+    Private Function UpdateVisuals(currentVisual As Long, nextVisual As Long) As LongPtr
+        PostLog "UpdateVisuals(" & currentVisual & ", " & nextVisual & ")->Entry"
+        On Error Resume Next
+        Dim hr As Long
+        visualRight.SetContent surfaceLeftChild(nextVisual)
+        hr = Err.LastHResult
+    
+        If SUCCEEDED(hr) Then
+            effectGroupLeftChild(currentVisual).SetOpacity 1.0
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            effectGroupLeftChild(nextVisual).SetOpacity 0.0
+            hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "UpdateVisuals->Commit()"
+            device.Commit()
+            hr = Err.LastHResult
+        End If
+        PostLog "UpdateVisuals->Out, hr=0x" & Hex$(hr)
+        Return IIf(SUCCEEDED(hr), 0, 1)
+    End Function
+    Private Function pvZoomOut() As Long
+        PostLog "ZoomOut->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(state = ZOOMEDOUT, E_UNEXPECTED, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            actionType = ACTION_TYPE.ZoomOut
+            hr = SetEffectOnVisuals()
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "ZoomOut->Commit()"
+            device.Commit
+    '        hr = Err.LastHResult
+        End If
+    
+        If SUCCEEDED(hr) Then
+            state = ZOOMEDOUT
+        End If
+    
+        pvZoomOut = hr
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'Handle errors manually
+    End Function
+
+    Private Function pvZoomIn() As Long
+        PostLog "ZoomIn->Entry"
+        On Error Resume Next
+        Dim hr As Long = IIf(state = ZOOMEDIN, E_UNEXPECTED, S_OK)
+    
+        If SUCCEEDED(hr) Then
+            actionType = ACTION_TYPE.ZoomIn
+            hr = SetEffectOnVisuals()
+        End If
+    
+        If SUCCEEDED(hr) Then
+            PostLog "ZoomIn->Commit()"
+            device.Commit
+        End If
+    
+        If SUCCEEDED(hr) Then
+            state = ZOOMEDIN
+        End If
+    
+        pvZoomIn = hr
+    
+    Exit Function
+    e0:
+    hr = Err.Number
+    Resume Next 'Handle errors manually
+    End Function
+
+    Private Function OnLeftButton() As LongPtr
+        Dim hr As Long = If(state = ZOOMEDOUT, pvZoomIn(), pvZoomOut())
+    
+        OnLeftButton = IIf(SUCCEEDED(hr), 0, 1)
+    End Function
+
+    Private Function OnKeyDown(wParam As LongPtr) As LongPtr
+        PostLog "OnKeyDown(" & wParam & ")->Entry"
+        Dim lr As LongPtr
+    
+        If state = ZOOMEDOUT Then
+            If (wParam = vbKey1) And (currentVisual <> 0) Then
+                lr = UpdateVisuals(currentVisual, 0)
+                currentVisual = 0
+            ElseIf (wParam = vbKey2) And (currentVisual <> 1) Then
+                lr = UpdateVisuals(currentVisual, 1)
+                currentVisual = 1
+            ElseIf (wParam = vbKey3) And (currentVisual <> 2) Then
+                lr = UpdateVisuals(currentVisual, 2)
+                currentVisual = 2
+            ElseIf (wParam = vbKey4) And (currentVisual <> 3) Then
+                lr = UpdateVisuals(currentVisual, 3)
+                currentVisual = 3
+            End If
+            PostLog "OnKeyDown->UpdateVisuals hr=0x" & Hex$(lr)
+        End If
+    
+        OnKeyDown = lr
+    End Function
+
+
+    Private Function OnClose() As Long
+        If m_hWnd Then
+            DestroyWindow m_hWnd
+            m_hWnd = 0
+        End If
+    
+        OnClose = 0
+    End Function
+
+    Private Function OnDestroy() As Long
+        PostQuitMessage 0
+    End Function
+
+    Private Function OnPaint() As Long
+        Dim rcClient As RECT
+        Dim ps As PAINTSTRUCT
+        Dim hDC As LongPtr = BeginPaint(m_hWnd, ps)
+    
+        GetClientRect m_hWnd, rcClient
+    
+        Dim hLogo As LongPtr = CreateFontW(fontHeightLogo, 0, 0, 0, 0, CFALSE, 0, 0, 0, 0, 0, 0, 0, StrPtr(FONT_TYPEFACE))
+        If hLogo <> 0 Then
+            Dim hOldFont As LongPtr = SelectObject(hDC, hLogo)
+   
+            SetBkMode hDC, TRANSPARENT
+        
+            rcClient.Top = 10
+            rcClient.Left = 50
+        
+            DrawTextW hDC, StrPtr("Windows samples"), -1, rcClient, DT_WORDBREAK
+        
+            SelectObject hDC, hOldFont
+        
+            DeleteObject hLogo
+        End If
+    
+        Dim hTitle As LongPtr = CreateFontW(fontHeightTitle, 0, 0, 0, 0, CFALSE, 0, 0, 0, 0, 0, 0, 0, StrPtr(FONT_TYPEFACE))
+        If hTitle <> 0 Then
+            Dim hOldFontT As LongPtr = SelectObject(hDC, hTitle)
+        
+            SetTextColor hDC, GetSysColor(COLOR_WINDOWTEXT)
+        
+            rcClient.Top = 25
+            rcClient.Left = 50
+        
+            DrawTextW hDC, StrPtr("DirectComposition Effects Sample"), -1, rcClient, DT_WORDBREAK
+        
+            SelectObject hDC, hOldFontT
+        
+            DeleteObject hTitle
+        End If
+        
+        Dim hDescription As LongPtr = CreateFontW(fontHeightDescription, 0, 0, 0, 0, CFALSE, 0, 0, 0, 0, 0, 0, 0, StrPtr(FONT_TYPEFACE)) '    // Description Font And Size
+        If (hDescription <> 0) Then
+            Dim hOldFontD As LongPtr = SelectObject(hDC, hDescription)
+
+            rcClient.Top = 90
+            rcClient.Left = 50
+
+            DrawTextW hDC, StrPtr("This sample explains how to use DirectComposition effects: rotation, scaling, perspective, translation and opacity."), -1, rcClient, DT_WORDBREAK
+
+            rcClient.Top = 500
+            rcClient.Left = 450
+
+            DrawTextW hDC, StrPtr("A) Left-click to toggle between single and multiple-panels view." & vbCrLf & "B) Use keys 1-4 to switch the color of the right-panel."), -1, rcClient, DT_WORDBREAK
+
+            SelectObject hDC, hOldFont
+
+            DeleteObject hDescription
+        End If
+   
+        Call EndPaint(m_hWnd, ps)
+    
+        OnPaint = 0
+    End Function
+    Private Function WindowProc(ByVal hWnd As LongPtr, ByVal uMsg As Long, ByVal wParam As LongPtr, ByVal lParam As LongPtr) As LongPtr
+        Dim result As LongPtr
+    
+        Select Case uMsg
+            Case WM_CREATE
+                PostLog "WM_CREATE"
+            
+             Case WM_LBUTTONUP
+                PostLog "WM_LBUTTONUP"
+                 result = OnLeftButton()
+            
+             Case WM_KEYDOWN
+                 result = OnKeyDown(wParam)
+            
+            Case WM_CLOSE
+                result = OnClose()
+            
+            Case WM_DESTROY
+                result = OnDestroy()
+            
+            Case WM_PAINT
+                result = OnPaint()
+            
+            Case Else
+                result = DefWindowProc(hWnd, uMsg, wParam, lParam)
+        End Select
+    
+        WindowProc = result
+    End Function
+    
+End Module
