@@ -18,7 +18,7 @@ The first demo is a just a basic proof of concept, a close-as-possible port of t
 
 Since the demo is ported as close as possible, you'll find something additional of interest in this project: Instead of using a Form, it creates it's own window from scratch using API and handles the entire message pump (error handlers omitted):
 
-```
+```vb6
     Private Function CreateApplicationWindow() As Long
 
         Dim hr As Long = S_OK
