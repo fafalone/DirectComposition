@@ -2,6 +2,8 @@
 
 This repository is to show off some basic demos of using DirectComposition/Direct2D in twinBASIC. 
 
+**Update (19 Dec 2023):** .twinproj updated to reference WinDevLib (formerly tbShellLib) 7.0-- this eliminates package errors that tB did not raise at the time this project was initially released.
+
 ### Requirements
 -DirectX 11, which is a pre-installed standard on Windows 7 and newer.
 
