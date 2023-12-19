@@ -53,7 +53,7 @@ Since the demo is ported as close as possible, you'll find something additional 
         End If
 ```
 
-```
+```vb6
     Private Function EnterMessageLoop() As Long
         Dim result As Long
     
