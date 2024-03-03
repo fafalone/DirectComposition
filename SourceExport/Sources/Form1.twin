@@ -1,6 +1,6 @@
-[ Description ("") ]
-[ FormDesignerId ("B85E90F8-3974-4829-85FD-3B9B53B89BEC") ]
-[ PredeclaredId ]
+[Description("DirectComposition Effects Demo")]
+[FormDesignerId("B85E90F8-3974-4829-85FD-3B9B53B89BEC")]
+[PredeclaredId]
 Class Form1
     Option Explicit
     Private nLogPos As Long

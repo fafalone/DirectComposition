@@ -19,10 +19,11 @@
 			"isCompilerPackage": true,
 			"lcid": 0,
 			"licence": "MIT",
-			"name": "[COMPILER PACKAGE] WinNativeForms Package",
+			"name": "[COMPILER PACKAGE] twinBASIC - VB Compatibility Package (Forms)",
 			"path32": "",
 			"path64": "",
 			"publisher": "TWINBASIC-COMPILER",
+			"symbolId": "VB",
 			"versionBuild": 0,
 			"versionMajor": 0,
 			"versionMinor": 0,
@@ -34,22 +35,23 @@
 			"name": "OLE Automation",
 			"path32": "\\\\?\\C:\\Windows\\SysWOW64\\stdole2.tlb",
 			"path64": "\\\\?\\C:\\Windows\\SysWOW64\\stdole2.tlb",
+			"symbolId": "stdole",
 			"versionMajor": 2,
 			"versionMinor": 0
 		},
 		{
 			"id": "{1FCDB98D-617D-4995-9736-2ED0E4746A10}",
 			"licence": "CC0 1.0 Universal",
-			"name": "[IMPORTED] twinBASIC Shell Library v5.0.203",
-			"path32": "/Packages/tbShellLib",
-			"path64": "/Packages/tbShellLib",
-			"publishedDate": "19-AUG-2023",
-			"publishedTime": "20:27:34",
+			"name": "[IMPORTED] Windows Development Library for twinBASIC v7.6.325",
+			"path32": "/Packages/WinDevLib",
+			"path64": "/Packages/WinDevLib",
+			"publishedDate": "29-FEB-2024",
+			"publishedTime": "17:58:56",
 			"publisher": "fafalone",
-			"symbolId": "tbShellLib",
-			"versionBuild": "203",
-			"versionMajor": "5",
-			"versionMinor": "0",
+			"symbolId": "WinDevLib",
+			"versionBuild": "325",
+			"versionMajor": "7",
+			"versionMinor": "6",
 			"versionRevision": "0"
 		}
 	],
@@ -64,7 +66,9 @@
 	"project.versionRevision": 2,
 	"project.warnings": {
 		"errors": [],
-		"ignored": []
+		"hints": [],
+		"ignored": [],
+		"info": []
 	},
 	"runtime.useUnicodeStandardLibrary": true
 }

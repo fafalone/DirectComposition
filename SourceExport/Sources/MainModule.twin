@@ -156,7 +156,8 @@ Module MainModule
             PostLog "Exited message loop"
             result = CLng(tMSG.wParam)
         End If
-        
+
+    
         EnterMessageLoop = result
     End Function
 
@@ -342,7 +343,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             Set dxgiDevice = d3d11Device
-            hr = Err.LastHResult '(dxgiDevice IsNot Nothing)
+            hr = Err.LastHresult '(dxgiDevice IsNot Nothing)
         End If
         If dxgiDevice Is Nothing Then
             hr = E_NOINTERFACE
@@ -350,7 +351,7 @@ Module MainModule
         If SUCCEEDED(hr) Then
             PostLog "CreateD2D1Device->Successful QI for dxgiDevice"
             d2d1Factory.CreateDevice dxgiDevice, d2d1Device
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         Else
             PostLog "CreateD2D1Device->Failed QI for dxgiDevice, lasthr=0x" & Hex$(hr) 'Hex$(Err.LastHResult)
         End If
@@ -358,7 +359,7 @@ Module MainModule
         If SUCCEEDED(hr) Then
             PostLog "CreateD2D1Device->Created d2d1device"
             d2d1Device.CreateDeviceContext D2D1_DEVICE_CONTEXT_OPTIONS_NONE, d2d1DeviceContext
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         Else
             PostLog "CreateD2D1Device->Failed to create d2d1device, lasthr=0x" & Hex$(hr)
         End If
@@ -398,12 +399,12 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateVisual visual
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
         PostLog "CreateDCompositionVisualTree->visual hr=0x" & Hex$(hr)
         If SUCCEEDED(hr) Then
             device.CreateVisual visualLeft
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
         PostLog "CreateDCompositionVisualTree->visualLeft hr=0x" & Hex$(hr)
         Dim surfaceLeft As IDCompositionSurface
@@ -415,7 +416,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             visualLeft.SetContent surfaceLeft
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->SetContent(surfaceLeft) hr=0x" & Hex$(hr)
         End If
     
@@ -425,7 +426,7 @@ Module MainModule
         
             If SUCCEEDED(hr) Then
                 device.CreateVisual visualLeftChild(i)
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
             If i = 0 Then
@@ -459,7 +460,7 @@ Module MainModule
         
             If SUCCEEDED(hr) Then
                 visualLeftChild(i).SetContent surfaceLeftChild(i)
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             Else
                 PostLog "CreateDCompositionVisualTree->CreateSurface(surfaceLeftChild(" & i & ")) fail; hr=0x" & Hex$(hr)
             End If
@@ -473,20 +474,20 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             visualRight.SetContent surfaceLeftChild(currentVisual)
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->SetContent surfaceLeftChild(cv) hr=0x" & Hex$(hr)
         End If
     
         If SUCCEEDED(hr) Then
             visual.AddVisual visualLeft, 1, Nothing
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->AddVisual visualLeft hr=0x" & Hex$(hr)
         End If
     
         If SUCCEEDED(hr) Then
             For i = 0 To 3
                 visualLeft.AddVisual visualLeftChild(i), 0, Nothing
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             Next
             PostLog "CreateDCompositionVisualTree->visualLeftChildren i=" & i & ", hr=0x" & Hex$(hr)
         End If
@@ -494,7 +495,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             visual.AddVisual visualRight, 1, visualLeft
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->AddVisual visualRight,visualLeft hr=0x" & Hex$(hr)
         End If
     
@@ -504,19 +505,19 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateTargetForHwnd m_hWnd, 1, target
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->CreateTargetForHwnd hr=0x" & Hex$(hr)
         End If
     
         If SUCCEEDED(hr) Then
             target.SetRoot visual
-            hr = Err.LastHResult
+            hr = Err.LastHresult
             PostLog "CreateDCompositionVisualTree->SetRoot hr=0x" & Hex$(hr)
         End If
     
         If SUCCEEDED(hr) Then
             device.Commit
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         CreateDCompositionVisualTree = hr
@@ -571,18 +572,18 @@ Module MainModule
         
             If SUCCEEDED(hr) Then
                 device.CreateTransform3DGroup VarPtr(transforms(0)), 2, transformGroup
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
             If SUCCEEDED(hr) Then
                 Set effectGroupLeftChild(i) = Nothing
                 device.CreateEffectGroup effectGroupLeftChild(i)
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
             If SUCCEEDED(hr) Then
                 effectGroupLeftChild(i).SetTransform3D transformGroup
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
             If SUCCEEDED(hr) And (i = currentVisual) Then
@@ -595,13 +596,13 @@ Module MainModule
             
                 If SUCCEEDED(hr) Then
                     effectGroupLeftChild(i).SetOpacity_A opacityAnimation
-                    hr = Err.LastHResult
+                    hr = Err.LastHresult
                 End If
             End If
         
             If SUCCEEDED(hr) Then
                 visualLeftChild(i).SetEffect effectGroupLeftChild(i)
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
         Next
@@ -628,37 +629,37 @@ Module MainModule
 
         If SUCCEEDED(hr) Then
             device.CreateScaleTransform3D transform
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
             
         If SUCCEEDED(hr) Then
             transform.SetCenterX centerX
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
          If SUCCEEDED(hr) Then
             transform.SetCenterY centerY
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             transform.SetCenterZ centerZ
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetScaleX scaleX
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
          If SUCCEEDED(hr) Then
             transform.SetScaleY scaleY
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             transform.SetScaleZ scaleZ
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
@@ -695,18 +696,18 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateTransform3DGroup VarPtr(transforms(0)), 1, transformGroup
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             Set effectGroupRight = Nothing
             device.CreateEffectGroup effectGroupRight
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             effectGroupRight.SetTransform3D transformGroup
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
@@ -719,13 +720,13 @@ Module MainModule
         
             If SUCCEEDED(hr) Then
                 effectGroupRight.SetOpacity_A opacityAnimation
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         End If
     
         If SUCCEEDED(hr) Then
             visualRight.SetEffect effectGroupRight
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         SetEffectOnVisualRight = hr
@@ -775,23 +776,23 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateTransform3DGroup VarPtr(transforms(0)), 3, transformGroup
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             Set effectGroupLeft = Nothing
             device.CreateEffectGroup effectGroupLeft
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             effectGroupLeft.SetTransform3D transformGroup
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             visualLeft.SetEffect effectGroupLeft
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         SetEffectOnVisualLeft = hr
@@ -820,12 +821,12 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateMatrixTransform3D transform
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetMatrix matrix
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
@@ -860,37 +861,37 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateRotateTransform3D transform
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetCenterX centerX
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
          If SUCCEEDED(hr) Then
             transform.SetCenterY centerY
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             transform.SetCenterZ centerZ
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetAxisX axisX
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
          If SUCCEEDED(hr) Then
             transform.SetAxisY axisY
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             transform.SetAxisZ axisZ
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         Dim angleAnimation As IDCompositionAnimation
@@ -901,7 +902,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             transform.SetAngle_A angleAnimation
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
@@ -932,22 +933,22 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateTranslateTransform3D transform
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetOffsetX offsetX
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
             transform.SetOffsetY offsetY
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             transform.SetOffsetZ offsetZ
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         If SUCCEEDED(hr) Then
@@ -978,7 +979,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateTranslateTransform3D transform
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         Dim offsetXAnimation As IDCompositionAnimation
@@ -989,7 +990,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             transform.SetOffsetX_A offsetXAnimation
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
 
         Dim offsetYAnimation As IDCompositionAnimation
@@ -1000,7 +1001,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             transform.SetOffsetY_A offsetYAnimation
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         Dim offsetZAnimation As IDCompositionAnimation
@@ -1011,7 +1012,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             transform.SetOffsetZ_A offsetZAnimation
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
@@ -1041,24 +1042,24 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateAnimation animation
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             If beginTime > 0 Then
                 animation.AddCubic 0, beginValue, 0, 0, 0
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         End If
     
         If SUCCEEDED(hr) Then
             animation.AddCubic beginTime, beginValue, (endValue - beginValue) / (endTime - beginTime), 0, 0
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             animation.End endTime, endValue
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
@@ -1093,7 +1094,7 @@ Module MainModule
     
         If SUCCEEDED(hr) Then
             device.CreateSurface size, size, DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ALPHA_MODE_IGNORE, surfaceTile
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         Dim dxgiSurface As IDXGISurface
@@ -1105,7 +1106,7 @@ Module MainModule
             RECT.Right = size: RECT.Bottom = size
         
             surfaceTile.BeginDraw RECT, IID_IDXGISurface, dxgiSurface, offset
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
         
         Dim d2d1Bitmap As ID2D1Bitmap1
@@ -1121,7 +1122,7 @@ Module MainModule
             bitmapProperties.DpiY = dpiY
         
             Set d2d1Bitmap = d2d1DeviceContext.CreateBitmapFromDxgiSurface(dxgiSurface, bitmapProperties)
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         
             If SUCCEEDED(hr) Then
                 d2d1DeviceContext.SetTarget d2d1Bitmap
@@ -1133,7 +1134,7 @@ Module MainModule
                 Dim clr As D2D1_COLOR_F
                 clr.r = fRed: clr.g = fGreen: clr.b = fBlue: clr.a = 1#
                 Set d2d1Brush = d2d1DeviceContext.CreateSolidColorBrush(clr, vbNullPtr)
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
         
             If SUCCEEDED(hr) Then
@@ -1149,7 +1150,7 @@ Module MainModule
                 d2d1DeviceContext.FillRectangle rf, d2d1Brush
             
                 d2d1DeviceContext.EndDraw ByVal 0, ByVal 0
-                hr = Err.LastHResult
+                hr = Err.LastHresult
             End If
             PostLog "CreateSurface->EndDraw"
             surfaceTile.EndDraw
@@ -1175,22 +1176,22 @@ Module MainModule
         On Error Resume Next
         Dim hr As Long
         visualRight.SetContent surfaceLeftChild(nextVisual)
-        hr = Err.LastHResult
+        hr = Err.LastHresult
     
         If SUCCEEDED(hr) Then
             effectGroupLeftChild(currentVisual).SetOpacity 1.0
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             effectGroupLeftChild(nextVisual).SetOpacity 0.0
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
     
         If SUCCEEDED(hr) Then
             PostLog "UpdateVisuals->Commit()"
             device.Commit()
-            hr = Err.LastHResult
+            hr = Err.LastHresult
         End If
         PostLog "UpdateVisuals->Out, hr=0x" & Hex$(hr)
         Return IIf(SUCCEEDED(hr), 0, 1)
