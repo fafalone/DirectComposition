@@ -1,5 +1,8 @@
 Module Common
-Option Explicit 
+Option Explicit
+
+Public gUI As Boolean
+
 Public bEffectsActive As Boolean
 
 Public oCS As CRITICAL_SECTION

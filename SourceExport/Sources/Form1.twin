@@ -9,6 +9,7 @@ Class Form1
 
     Private Sub AppStart() Handles Form.Load
     InitializeCriticalSectionAndSpinCount oCS, 4000&
+    gUI = True
     tmrLog.Interval = 2000
     tmrLog.Enabled = True
     End Sub

@@ -41,34 +41,36 @@
 		},
 		{
 			"id": "{1FCDB98D-617D-4995-9736-2ED0E4746A10}",
+			"isOnlinePackage": true,
 			"licence": "CC0 1.0 Universal",
-			"name": "[IMPORTED] Windows Development Library for twinBASIC v7.6.325",
+			"name": "[IMPORTED] Windows Development Library for twinBASIC v9.1.620",
 			"path32": "/Packages/WinDevLib",
 			"path64": "/Packages/WinDevLib",
-			"publishedDate": "29-FEB-2024",
-			"publishedTime": "17:58:56",
+			"publishedDate": "14-NOV-2025",
+			"publishedTime": "09:21:29",
 			"publisher": "fafalone",
 			"symbolId": "WinDevLib",
-			"versionBuild": "325",
-			"versionMajor": "7",
-			"versionMinor": "6",
+			"versionBuild": "620",
+			"versionMajor": "9",
+			"versionMinor": "1",
 			"versionRevision": "0"
 		}
 	],
 	"project.settingsVersion": 1,
-	"project.startupObject": "Form1",
+	"project.startupObject": "Sub Main",
 	"project.versionCompanyName": "JAJ Productions",
 	"project.versionFileDescription": "DirectComposition Demo",
 	"project.versionLegalCopyright": "(c) 2023",
 	"project.versionMajor": 1,
 	"project.versionMinor": 0,
 	"project.versionProductName": "DCompEffects",
-	"project.versionRevision": 2,
+	"project.versionRevision": 3,
 	"project.warnings": {
 		"errors": [],
 		"hints": [],
 		"ignored": [],
-		"info": []
+		"info": [],
+		"warnings": []
 	},
 	"runtime.useUnicodeStandardLibrary": true
 }

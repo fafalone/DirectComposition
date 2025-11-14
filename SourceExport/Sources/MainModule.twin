@@ -69,8 +69,9 @@ Module MainModule
         SUCCEEDED = (hr >= 0)
     End Function
     Sub Main()
+        InitializeCriticalSectionAndSpinCount oCS, 4000&
         RunDCompEffect
-    
+        DeleteCriticalSection oCS
     End Sub
 
     Public Function RunDCompEffect() As Long
@@ -595,7 +596,7 @@ Module MainModule
                 hr = CreateLinearAnimation(beginOpacity, endOpacity, 0.25, 1.25, opacityAnimation)
             
                 If SUCCEEDED(hr) Then
-                    effectGroupLeftChild(i).SetOpacity_A opacityAnimation
+                    effectGroupLeftChild(i).SetOpacity opacityAnimation
                     hr = Err.LastHresult
                 End If
             End If
@@ -719,7 +720,7 @@ Module MainModule
             hr = CreateLinearAnimation(beginOpacity, endOpacity, 0.25, 1.25, opacityAnimation)
         
             If SUCCEEDED(hr) Then
-                effectGroupRight.SetOpacity_A opacityAnimation
+                effectGroupRight.SetOpacity opacityAnimation
                 hr = Err.LastHresult
             End If
         End If
@@ -901,7 +902,7 @@ Module MainModule
         End If
     
         If SUCCEEDED(hr) Then
-            transform.SetAngle_A angleAnimation
+            transform.SetAngle angleAnimation
             hr = Err.LastHresult
         End If
     
@@ -989,7 +990,7 @@ Module MainModule
         End If
     
         If SUCCEEDED(hr) Then
-            transform.SetOffsetX_A offsetXAnimation
+            transform.SetOffsetX offsetXAnimation
             hr = Err.LastHresult
         End If
 
@@ -1000,7 +1001,7 @@ Module MainModule
         End If
     
         If SUCCEEDED(hr) Then
-            transform.SetOffsetY_A offsetYAnimation
+            transform.SetOffsetY offsetYAnimation
             hr = Err.LastHresult
         End If
     
@@ -1011,7 +1012,7 @@ Module MainModule
         End If
     
         If SUCCEEDED(hr) Then
-            transform.SetOffsetZ_A offsetZAnimation
+            transform.SetOffsetZ offsetZAnimation
             hr = Err.LastHresult
         End If
     
