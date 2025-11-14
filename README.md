@@ -2,7 +2,7 @@
 
 This repository is to show off some basic demos of using DirectComposition/Direct2D in twinBASIC. 
 
-**Update (14 Nov 2025):** .twinproj has been updated to use a more recent version of WinDevLib since newer ones changed how overloaded interface methods work. Also fixed bug that `Sub Main` startup option didn't work (since it missed initialiing the CS),
+**Update (14 Nov 2025):** Project has been updated to use a more recent version of WinDevLib since newer ones changed how overloaded interface methods work. Also fixed bug that `Sub Main` startup option didn't work (since it missed initialiing the CS),
 
 **Update (03 Mar 2024):** .twinproj has been updated to use a more recent version of WinDevLib (formerly tbShellLib) due to errors in the package tB did not raise at the time this project was released.
 
