@@ -337,7 +337,7 @@ Module MainModule
 
     Private Function CreateD2D1Device() As Long
         PostLog "CreateD2D1Device->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf((d3d11Device Is Nothing) Or (d2d1Factory Is Nothing), E_UNEXPECTED, S_OK)
     
         Dim dxgiDevice As IDXGIDevice
@@ -368,7 +368,7 @@ Module MainModule
         CreateD2D1Device = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
@@ -395,7 +395,7 @@ Module MainModule
 
     Private Function CreateDCompositionVisualTree() As Long
         PostLog "CreateDCompositionVisualTree->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(device Is Nothing, E_UNEXPECTED, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -524,7 +524,7 @@ Module MainModule
         CreateDCompositionVisualTree = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
@@ -544,7 +544,7 @@ Module MainModule
 
     Private Function SetEffectOnVisualLeftChildren() As Long
         PostLog "SetEffectOnVisualLeftChildren->Entry"
-        On Error Resume Next
+        On Error GoTo e0
    
         Dim hr As Long = S_OK
     
@@ -611,14 +611,14 @@ Module MainModule
         SetEffectOnVisualLeftChildren = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next
 
     End Function
 
     Private Function CreateScaleTransform(centerX As Single, centerY As Single, centerZ As Single, scaleX As Single, scaleY As Single, scaleZ As Single, scaleTransform As IDCompositionScaleTransform3D) As Long
         PostLog "CreateScaleTransform->Entry"
-        On Error Resume Next
+        On Error GoTo e0
          Dim hr As Long = IIf(VarPtr(scaleTransform) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -671,13 +671,13 @@ Module MainModule
         CreateScaleTransform = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
     Private Function SetEffectOnVisualRight() As Long
         PostLog "SetEffectOnVisualRight->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(visualRight Is Nothing, E_UNEXPECTED, S_OK)
     
         Dim beginOffsetX As Single = IIf(actionType = ZoomOut, 6.5, 3.75)
@@ -733,13 +733,13 @@ Module MainModule
         SetEffectOnVisualRight = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
     Private Function SetEffectOnVisualLeft() As Long
         PostLog "SetEffectOnVisualLeft->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(visualLeft Is Nothing, E_UNEXPECTED, S_OK)
     
         Dim beginOffsetX As Single = IIf(actionType = ZoomOut, 3#, 0.5)
@@ -799,13 +799,13 @@ Module MainModule
         SetEffectOnVisualLeft = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
     Private Function CreatePerspectiveTransform(dx As Single, dy As Single, dz As Single, perspectiveTransform As IDCompositionMatrixTransform3D) As Long
         PostLog "CreatePerspectiveTransform->Entry, dz=" & dz
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(VarPtr(perspectiveTransform) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -838,7 +838,7 @@ Module MainModule
         CreatePerspectiveTransform = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
         
     End Function
@@ -850,7 +850,7 @@ Module MainModule
                                            rotateTransform As IDCompositionRotateTransform3D) As Long
                                            
         PostLog "CreateRotateTransform->Entry"
-        On Error Resume Next
+        On Error GoTo e0
          Dim hr As Long = IIf(VarPtr(rotateTransform) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -914,7 +914,7 @@ Module MainModule
         CreateRotateTransform = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
         
         
@@ -922,7 +922,7 @@ Module MainModule
 
     Private Function CreateTranslateTransform(offsetX As Single, offsetY As Single, offsetZ As Single, translateTransform As IDCompositionTranslateTransform3D) As Long
         PostLog "CreateTranslateTransform->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(VarPtr(translateTransform) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -960,14 +960,14 @@ Module MainModule
         CreateTranslateTransform = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     End Function
 
                                        
     Private Function CreateTranslateTransform_A(beginOffsetX As Single, beginOffsetY As Single, beginOffsetZ As Single, endOffsetX As Single, endOffsetY As Single, endOffsetZ As Single, beginTime As Single, endTime As Single, translateTransform As IDCompositionTranslateTransform3D) As Long
         PostLog "CreateTranslateTransform_A->Entry"
-        On Error Resume Next
+        On Error GoTo e0
 
         Dim hr As Long = IIf(VarPtr(translateTransform) = 0, E_POINTER, S_OK)
     
@@ -1024,14 +1024,14 @@ Module MainModule
         CreateTranslateTransform_A = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
     
     End Function
 
     Private Function CreateLinearAnimation(beginValue As Single, endValue As Single, beginTime As Single, endTime As Single, linearAnimation As IDCompositionAnimation) As Long
         PostLog "CreateLinearAnimation->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(VarPtr(linearAnimation) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -1072,7 +1072,7 @@ Module MainModule
         CreateLinearAnimation = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
 
     End Function
@@ -1083,7 +1083,7 @@ Module MainModule
 
     Private Function CreateSurface(ByVal size As Long, ByVal fRed As Single, ByVal fGreen As Single, ByVal fBlue As Single, surface As IDCompositionSurface) As Long
         PostLog "CreateSurface->Entry"
-        On Error Resume Next
+        On Error goto e0
         Dim hr As Long = IIf(VarPtr(surface) = 0, E_POINTER, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -1134,7 +1134,7 @@ Module MainModule
             If SUCCEEDED(hr) Then
                 Dim clr As D2D1_COLOR_F
                 clr.r = fRed: clr.g = fGreen: clr.b = fBlue: clr.a = 1#
-                Set d2d1Brush = d2d1DeviceContext.CreateSolidColorBrush(clr, vbNullPtr)
+                Set d2d1Brush = d2d1DeviceContext.CreateSolidColorBrush(clr, ByVal vbNullPtr)
                 hr = Err.LastHresult
             End If
         
@@ -1167,7 +1167,7 @@ Module MainModule
     CreateSurface = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'We handle errors manually with the endless SUCCEEDED checks
    
     End Function
@@ -1199,7 +1199,7 @@ Module MainModule
     End Function
     Private Function pvZoomOut() As Long
         PostLog "ZoomOut->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(state = ZOOMEDOUT, E_UNEXPECTED, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -1220,13 +1220,13 @@ Module MainModule
         pvZoomOut = hr
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'Handle errors manually
     End Function
 
     Private Function pvZoomIn() As Long
         PostLog "ZoomIn->Entry"
-        On Error Resume Next
+        On Error GoTo e0
         Dim hr As Long = IIf(state = ZOOMEDIN, E_UNEXPECTED, S_OK)
     
         If SUCCEEDED(hr) Then
@@ -1247,7 +1247,7 @@ Module MainModule
     
     Exit Function
     e0:
-    hr = Err.Number
+    hr = HRESULT_FROM_WIN32(Err.Number)
     Resume Next 'Handle errors manually
     End Function
 
